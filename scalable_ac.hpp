@@ -259,11 +259,25 @@ class scalable_ac_c {
 	//Remember to save/restore states!
 	template <typename base_t>
 	const max_range_type_t estimate_cost(const base_t s) {
-		const max_range_type_t uf = m_underflow_count;
+		max_range_type_t cost = range_code(s,true);
 
-		encode_symbol(s);
+		register probability_type_t* p0;
+		register probability_type_t* p1;
 
-		return m_underflow_count - uf;
+
+		p0 = &m_probability[s + (max_range_type_t)1];
+		p1 = &m_probability[m_max_syms + (max_range_type_t)1];
+		if (p0 < p1) {
+			do {
+				*(p0++) += (probability_type_t)1U;
+			} while (p0 < p1);
+		}
+ 
+
+		if (m_probability[m_max_syms] >= k_max_range)
+			scale_model();	
+
+		return cost;
 	}
 
 	//Remember to save/restore states!
@@ -299,10 +313,11 @@ class scalable_ac_c {
 	}
 
 
-	void range_code(max_range_type_t symbol) {
+	max_range_type_t range_code(max_range_type_t symbol,const bool simulate = false) {
 		const max_range_type_t sym_low = (max_range_type_t)m_probability[symbol];
 		const max_range_type_t sym_high = (max_range_type_t)m_probability[symbol + (max_range_type_t)1];
 		const max_range_type_t max_range = (max_range_type_t)m_probability[m_max_syms];
+		max_range_type_t cost = 0;
 
 		m_tmp_range=(m_high-m_low)+(max_range_type_t)1;
 		m_high = m_low + ((m_tmp_range*sym_high)/max_range)- (max_range_type_t)1;
@@ -310,16 +325,19 @@ class scalable_ac_c {
 
 		do {
 			if ((m_high & k_hi_bit_val)==(m_low & k_hi_bit_val)) {
-				m_stream->write(m_high>>k_hi_bit,1);
-				const max_range_type_t bstate = (m_high>>k_hi_bit)^(max_range_type_t)1;
-				const uint64_t uf_mask = (bstate) ? (((uint64_t)-1)) : (uint64_t)0;
+				cost += m_underflow_count + 1;
+				if (!simulate) {
+					m_stream->write(m_high>>k_hi_bit,1);
+					const max_range_type_t bstate = (m_high>>k_hi_bit)^(max_range_type_t)1;
+					const uint64_t uf_mask = (bstate) ? (((uint64_t)-1)) : (uint64_t)0;
 
-				for (;m_underflow_count >= 64U;m_underflow_count -= 64U) 
-					m_stream->write(uf_mask,64U);
+				
+					for (;m_underflow_count >= 64U;m_underflow_count -= 64U) 
+						m_stream->write(uf_mask,64U);
 					
-				if (m_underflow_count)
-					m_stream->write(uf_mask,m_underflow_count);
-
+					if (m_underflow_count)
+						m_stream->write(uf_mask,m_underflow_count);
+				}
 				m_underflow_count=(max_range_type_t)0;
 
 			} else {
@@ -328,12 +346,13 @@ class scalable_ac_c {
 					m_low	 &=	k_low_bit_mask;
 					m_high |=	k_low_bit_val;
 				}
-				else return;
+				else break;
 			}
 
 			m_low = (m_low<<(max_range_type_t)1) &	k_probability_range_mask;
 			m_high = ((m_high<<(max_range_type_t)1)|(max_range_type_t)1) & k_probability_range_mask;
 		} while (1);
+		return cost;
 	}
 };
 
