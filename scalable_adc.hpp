@@ -194,6 +194,29 @@ class scalable_adc_c {
 	} 
 
 
+	bool expand(max_range_type_t max_symbols) {
+		if (!m_probability)
+			return false;
+		else if (max_symbols <= m_max_syms)
+			return false;
+
+		probability_type_t* tmp = new probability_type_t[max_symbols + 1];
+		if (!tmp)
+			return false;
+
+		for (max_range_type_t i = (max_range_type_t)0;i <= m_max_syms;i++)
+			tmp[i]=m_probability[i];	
+
+		for (max_range_type_t i = (max_range_type_t)m_max_syms+(max_range_type_t)1, j = 0;i <= max_symbols;i++)
+			tmp[i]=j++;
+
+		delete[] m_probability;
+		m_probability = tmp;
+		m_max_syms = max_symbols;
+
+		return true;
+	}
+	
 	private:
 	inline max_range_type_t get_current_prob(max_range_type_t range) {
 		m_tmp_range = (m_high-m_low)+(max_range_type_t)1;
