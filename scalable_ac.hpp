@@ -226,8 +226,8 @@ class scalable_ac_c {
 		for (max_range_type_t i = (max_range_type_t)0;i <= m_max_syms;i++)
 			tmp[i]=m_probability[i];	
 
-		for (max_range_type_t i = (max_range_type_t)m_max_syms+(max_range_type_t)1;i <= max_symbols;i++)
-			tmp[i]=i;		
+		for (max_range_type_t i = (max_range_type_t)m_max_syms+(max_range_type_t)1, j = 0;i <= max_symbols;i++)
+			tmp[i]=j++;
 
 		delete[] m_probability;
 		m_probability = tmp;
