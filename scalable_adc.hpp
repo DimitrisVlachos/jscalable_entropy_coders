@@ -80,7 +80,7 @@ class scalable_adc_c {
 		if (!state)
 			return 0;
 
-		state->probability = new probability_t[m_max_syms+1];
+		state->probability = new probability_type_t[m_max_syms+1];
 		if (!state->probability) {
 			delete state;
 			return 0;
@@ -112,7 +112,7 @@ class scalable_adc_c {
 		//Could just assign memory in this case as long as cleanup==true
 		if (m_max_syms != state->max_syms) {
 			delete[] m_probability;
-			m_probability = new probability_t[state->max_syms+1];
+			m_probability = new probability_type_t[state->max_syms+1];
 			if (!m_probability)
 				return false;
 
