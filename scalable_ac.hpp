@@ -238,20 +238,24 @@ class scalable_ac_c {
 		if (count >= k_max_range) {			
 			const max_range_type_t lim = (count / k_max_range) + 1;
 			m_probability[0] = 0;
-			for (max_range_type_t i=(max_range_type_t)1;i <= max_symbols;i++) {
-				max_range_type_t tmp = symbol_real_frequencies[i - 1];
+			for (max_range_type_t i=(max_range_type_t)0;i < max_symbols;i++) {
+				max_range_type_t tmp = symbol_real_frequencies[i];
 				if (tmp > lim)
 					tmp /= lim;
 				else if (tmp)
 					tmp = 1;
 
-				m_probability[i] += tmp;
+				m_probability[i+1] = tmp;
 			}
 		} else {
 			m_probability[0] = 0;
-			for (max_range_type_t i=(max_range_type_t)1;i <= max_symbols;i++)
-				m_probability[i] += symbol_real_frequencies[i - 1];
+			for (max_range_type_t i=(max_range_type_t)0;i < max_symbols;i++)
+				m_probability[i+1] = symbol_real_frequencies[i];
 		}
+
+		m_probability[0] = 0;
+		for (max_range_type_t i=(max_range_type_t)1;i <= max_symbols;i++)
+			m_probability[i] +=m_probability[i-1]; 
 
 		return true;
 	} 
