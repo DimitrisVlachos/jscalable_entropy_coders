@@ -236,38 +236,22 @@ class scalable_ac_c {
 			return false;
 		
 		if (count >= k_max_range) {			
-			base_t* tmp = new base_t[max_symbols];
-			if (!tmp) {
-				delete[] m_probability;
-				return false;
-			}
-			
 			const max_range_type_t lim = (count / k_max_range) + 1;
-
-			for (max_range_type_t i=(max_range_type_t)0;i < max_symbols;i++)
-				tmp[i] = symbol_real_frequencies[i];
-
-			for (max_range_type_t i=(max_range_type_t)0;i < max_symbols;i++) {
-				if (tmp[i] > lim)
-					tmp[i] /= lim;
-				else if (tmp[i])
-					tmp[i] = 1;
-			}
-
 			m_probability[0] = 0;
-			for (max_range_type_t i=(max_range_type_t)1;i < max_symbols;i++)
-				m_probability[i] = tmp[i];
+			for (max_range_type_t i=(max_range_type_t)1;i <= max_symbols;i++) {
+				max_range_type_t tmp = symbol_real_frequencies[i - 1];
+				if (tmp > lim)
+					tmp /= lim;
+				else if (tmp)
+					tmp = 1;
 
-			delete[] tmp;
+				m_probability[i] += tmp;
+			}
 		} else {
 			m_probability[0] = 0;
-			for (max_range_type_t i=(max_range_type_t)1;i < max_symbols;i++)
-				m_probability[i] = symbol_real_frequencies[i];
+			for (max_range_type_t i=(max_range_type_t)1;i <= max_symbols;i++)
+				m_probability[i] += symbol_real_frequencies[i - 1];
 		}
-
-		m_probability[0] = 0;
-		for (max_range_type_t i=(max_range_type_t)1;i <= max_symbols;i++)
-			m_probability[i] += m_probability[i - 1];
 
 		return true;
 	} 
