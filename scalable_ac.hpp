@@ -213,28 +213,64 @@ class scalable_ac_c {
 		return true;
 	} 
 
-	bool expand(max_range_type_t max_symbols) {
-		if (!m_probability)
-			return false;
-		else if (max_symbols <= m_max_syms)
-			return false;
-
-		probability_type_t* tmp = new probability_type_t[max_symbols + 1];
-		if (!tmp)
+	//Initialize from static prob symbol table
+    template <typename base_t>
+	bool init(const base_t* symbol_real_frequencies,const max_range_type_t count,max_range_type_t max_symbols,bit_streams::bit_stream_writer_c<writer_type_c>* stream) {
+		flush();
+		if ((!stream) || (!max_symbols))
 			return false;
 
-		for (max_range_type_t i = (max_range_type_t)0;i <= m_max_syms;i++)
-			tmp[i]=m_probability[i];	
-
-		for (max_range_type_t i = (max_range_type_t)m_max_syms+(max_range_type_t)1, j = 0;i <= max_symbols;i++)
-			tmp[i]=j++;
-
+		m_high= (max_range_type_t)( ((probability_type_t)-1)  );
+		 
+		m_low=0;
+		m_underflow_count=0;
+		m_tmp_range=0;
+		m_flushed=false; 
+		m_stream = stream;
+		 
 		delete[] m_probability;
-		m_probability = tmp;
+		m_probability = new probability_type_t[max_symbols + 1];
 		m_max_syms = max_symbols;
 
+		if (!m_probability)
+			return false;
+		
+		if (count >= k_max_range) {			
+			base_t* tmp = new base_t[max_symbols];
+			if (!tmp) {
+				delete[] m_probability;
+				return false;
+			}
+			
+			const max_range_type_t lim = (count / k_max_range) + 1;
+
+			for (max_range_type_t i=(max_range_type_t)0;i < max_symbols;i++)
+				tmp[i] = symbol_real_frequencies[i];
+
+			for (max_range_type_t i=(max_range_type_t)0;i < max_symbols;i++) {
+				if (tmp[i] > lim)
+					tmp[i] /= lim;
+				else if (tmp[i])
+					tmp[i] = 1;
+			}
+
+			m_probability[0] = 0;
+			for (max_range_type_t i=(max_range_type_t)1;i < max_symbols;i++)
+				m_probability[i] = tmp[i];
+
+			delete[] tmp;
+		} else {
+			m_probability[0] = 0;
+			for (max_range_type_t i=(max_range_type_t)1;i < max_symbols;i++)
+				m_probability[i] = symbol_real_frequencies[i];
+		}
+
+		m_probability[0] = 0;
+		for (max_range_type_t i=(max_range_type_t)1;i <= max_symbols;i++)
+			m_probability[i] += m_probability[i - 1];
+
 		return true;
-	}
+	} 
 
 	void encode_symbol(const max_range_type_t s) {
 		range_code(s);
